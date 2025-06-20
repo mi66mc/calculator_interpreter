@@ -18,13 +18,25 @@ public class Lexer {
                 pos++;
             } else if (Character.isDigit(c)) {
                 StringBuilder numstring = new StringBuilder();
-                while (pos > input.length() && Character.isDigit(input.charAt(pos))) {
+                while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
                     numstring.append(input.charAt(pos++));
                 }
                 tokens.add(new Token(TokenType.NUMBER, numstring.toString()));
+            } else {
+                switch (c) {
+                    case '+': tokens.add(new Token(TokenType.PLUS, "+")); break;
+                    case '-': tokens.add(new Token(TokenType.MINUS, "-")); break;
+                    case '*': tokens.add(new Token(TokenType.STAR, "*")); break;
+                    case '/': tokens.add(new Token(TokenType.SLASH, "/")); break;
+                    case '(': tokens.add(new Token(TokenType.LPAREN, "(")); break;
+                    case ')': tokens.add(new Token(TokenType.RPAREN, ")")); break;
+                    default: throw new RuntimeException("Invalid char: " + c);
+                }
+                pos++;
             }
         }
 
+        tokens.add(new Token(TokenType.EOF, ""));
         return tokens;
     }
 }
