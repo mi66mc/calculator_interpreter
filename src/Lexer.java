@@ -9,7 +9,7 @@ public class Lexer {
         this.input = input;
     }
 
-    List<Token> tokenize() {
+    public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
 
         while (pos < input.length()) {
