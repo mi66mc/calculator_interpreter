@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Parser {
@@ -18,48 +20,66 @@ public class Parser {
 
     private boolean match(TokenType type) {
         if (peek().type == type) {
+            advance();
             return true;
         }
         return false;
     }
 
-    public int parse() {
-        return expression();
+    public Expression parse() {
+        return parse_expression();
     }
 
-    private int expression() {
-        int r = term();
-        while (match(TokenType.PLUS) || match(TokenType.MINUS)) {
+    private int precedence(String op) {
+        return switch (op) {
+            case "+", "-" -> 1;
+            case "*", "/" -> 2;
+            default -> throw new IllegalStateException("Unexpected value: " + op);
+        };
+    }
+
+    private Expression parse_expression(int minPrecedence) {
+        Expression left = parse_primary();
+
+        List<TokenType> oplist = new ArrayList<>(Arrays.asList(TokenType.MINUS, TokenType.PLUS, TokenType.STAR, TokenType.SLASH));
+
+        while (peek().type != TokenType.EOF && oplist.contains(peek().type) && precedence(peek().text) >= minPrecedence) {
             Token op = advance();
-            int right = term();
-            r = op.type == TokenType.PLUS ? r + right : r - right;
+            int nextMinPrecedence = precedence(op.text) + 1;
+            Expression right = parse_expression(nextMinPrecedence);
+            Expression newLeft = new Expression(op.text);
+            newLeft.setLeft(left);
+            newLeft.setRight(right);
+            left = newLeft;
         }
-        return r;
+
+        return left;
     }
 
-    private int term() {
-        int r = factor();
-        while (match(TokenType.STAR) || match(TokenType.SLASH)) {
-            Token op = advance();
-            int right = factor();
-            r = op.type == TokenType.STAR ? r * right : r / right;
-        }
-        return r;
+    private Expression parse_expression() {
+        return parse_expression(1);
     }
 
-    private int factor() {
-        if (match(TokenType.NUMBER)) {
-            return Integer.parseInt(advance().text);
-        } else if (match(TokenType.LPAREN)) {
+    private Expression parse_primary() {
+        Token token = peek();
+
+        if (token.type == TokenType.EOF) {
+            throw new IllegalStateException("Unexpected end of line");
+        }
+
+        if (token.type == TokenType.NUMBER) {
             advance();
-            int val = expression();
-            if (!match(TokenType.RPAREN)) {
-                throw new RuntimeException("Expected ')'");
+            return new Expression(token.text);
+        } else if (token.type == TokenType.LPAREN) {
+            advance();
+            Expression expr = parse_expression();
+            if (!(peek().type == TokenType.RPAREN)) {
+                throw new IllegalStateException("Expected ')' found ");
             }
             advance();
-            return val;
+            return expr;
         } else {
-            throw new RuntimeException("Expected '(' or a number");
+            throw new IllegalStateException("Unexpected token: " + token);
         }
     }
 }
